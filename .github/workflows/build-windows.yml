@@ -1,0 +1,31 @@
+# Fork-only helper (never part of a pull request): builds lightcraft.exe for Windows x64 with the
+# same flags as packaging/windows/package.ps1 (HEIC/HEIF on), so the .exe can replace the installed
+# one. Runs on every push to the `build-windows` branch, or by hand (Actions -> Run workflow).
+name: Windows build (fork)
+
+on:
+  push:
+    branches: [build-windows]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rust toolchain (the project needs 1.90 or newer)
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+          rustc --version
+      - name: Build lightcraft.exe
+        run: cargo build --release --locked -p lightcraft --features lightcraft/heif
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lightcraft-windows-x64
+          path: target/release/lightcraft.exe
+          if-no-files-found: error
